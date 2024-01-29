@@ -26,7 +26,7 @@ std::string curlRequest(const std::string& url) {
             curl_easy_cleanup(curl);
             return response;
         } else {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            std::cout << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
         }
     }
     return "";
