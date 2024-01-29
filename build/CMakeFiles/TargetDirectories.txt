@@ -1,0 +1,3 @@
+/home/mug1vara/projects/DoPM/ApiYan/build/CMakeFiles/test.dir
+/home/mug1vara/projects/DoPM/ApiYan/build/CMakeFiles/edit_cache.dir
+/home/mug1vara/projects/DoPM/ApiYan/build/CMakeFiles/rebuild_cache.dir
