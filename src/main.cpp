@@ -41,7 +41,7 @@ void getFlights(const std::string& date, const std::string& from, const std::str
     if (!response.empty()) {
         json data = json::parse(response);
 
-        if (!data["segments"].is_null()) {
+        if (data.find("segments") != data.end() && !data["segments"].is_null()) { // проверка наличия элемента "segments" в объекте data
             for (const auto& segment : data["segments"]) {
                 std::string carrierTitle = segment["thread"]["carrier"]["title"];
                 std::cout << "Перевозчик: " << carrierTitle << std::endl;
@@ -58,31 +58,48 @@ void getFlights(const std::string& date, const std::string& from, const std::str
 }
 
 // Функция для получения ближайших станций с использованием геокодера
-void getNearestStations(const std::string& latitude, const std::string& longitude) { 
-    std::string apiKey = "115dc605-fd1d-440c-a25c-f5317ad96828"; 
-    std::string url = "https://catalog.api.2gis.com/3.0/items?q=" + latitude + "," + longitude + "&radius=1000&key=" + apiKey;
+void getNearestStations(const std::string& city) {
+    std::string apiKey = "0038d200-62ed-4147-8a11-b996a7e2c7a7";
+    std::string url = "https://catalog.api.2gis.com/3.0/items/geocode?q=" + city + "&fields=items.point&key=" + apiKey;
 
- 
-   std::string response = curlRequest(url);
-   if (!response.empty()) {
-    json data = json::parse(response);
+    std::string response = curlRequest(url);
+    if (!response.empty()) {
+        json data = json::parse(response);
 
-    if (!data["result"].is_null()) {
-        for (const auto& result : data["result"]) {
-            std::string name = result["name"];
-            std::cout << "Станция: " << name << std::endl;
-            std::cout << "Адрес: " << result["address_name"] << std::endl;
+        if (!data["result"].is_null() && data["result"]["items"].size() > 0) {
+            float lat = data["result"]["items"][0]["point"]["lat"].get<float>();
+            float lon = data["result"]["items"][0]["point"]["lon"].get<float>();
+            std::cout << "Широта: " << lat << std::endl;
+            std::cout << "Долгота: " << lon << std::endl;
             std::cout << std::endl;
+
+            std::string stationsUrl = "https://api.rasp.yandex.net/v3.0/nearest_stations/?apikey=d946fec0-4ee8-4107-9212-07643c816efe&format=json&lat="
+             + std::to_string(lat) + "&lng=" + std::to_string(lon) + "&distance=50&lang=ru_RU";
+            std::string stationsResponse = curlRequest(stationsUrl);
+
+            if (!stationsResponse.empty()) {
+                json stationsData = json::parse(stationsResponse);
+
+                if (stationsData.count("stations") > 0) {
+                    for (const auto& station : stationsData["stations"]) {
+                        std::string name = station["name"].get<std::string>();
+                        std::cout << "Станция: " << name << std::endl;
+                        std::cout << "Адрес: " << station["address"].get<std::string>() << std::endl;
+                        std::cout << std::endl;
+                    }
+                } else {
+                    std::cout << "В указанном адресе не найдено ближайших станций." << std::endl;
+                }
+            } else {
+                std::cout << "Произошла ошибка при выполнении запроса ближайших станций." << std::endl;
+            }
+        } else {
+            std::cout << "В указанном адресе не найдено координат." << std::endl;
         }
     } else {
-        std::cout << "Рядом с указанным местоположением станций не найдено." << std::endl;
+        std::cout << "Произошла ошибка при выполнении запроса geocode." << std::endl;
     }
-} else {
-    std::cout << "Произошла ошибка при выполнении запроса API." << std::endl;
 }
-
-}
-
 
 // Функция для получения информации о перевозчике
 void getCarrierInfo(const std::string& code) {
@@ -95,7 +112,6 @@ void getCarrierInfo(const std::string& code) {
 
         if (!data["title"].is_null()) {
             std::cout << "Перевозчик: " << data["title"] << std::endl;
-            std::cout << "Страна: " << data["country_title"] << std::endl;
             std::cout << "Телефон: " << data["phones"][0] << std::endl;
             std::cout << "URL: " << data["url"] << std::endl;
         } else {
@@ -105,6 +121,7 @@ void getCarrierInfo(const std::string& code) {
         std::cout << "Произошла ошибка при выполнении запроса API." << std::endl;
     }
 }
+
 
 int main() {
     std::string date, from, to;
@@ -131,12 +148,11 @@ int main() {
                 getFlights(date, from, to);
                 break;
             case 2: {
-                std::string latitude, longitude;
-                std::cout << "Введите широту: ";
-                std::cin >> latitude;
-                std::cout << "Введите долготу: ";
-                std::cin >> longitude;
-                getNearestStations(latitude, longitude);
+                std::string city;
+                std::cout << "Введите город: ";
+                std::cin >> city;
+
+                getNearestStations(city);
             break;
         }
             case 3: {
